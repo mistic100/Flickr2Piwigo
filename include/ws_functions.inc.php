@@ -139,7 +139,7 @@ function ws_flickr2piwigo_importPhoto($params)
   }
   else
   {
-    // ...or we ignore it an query for all of the photo's albums on Flickr.
+    // ...or we ignore it and query for all of the photo's albums on Flickr.
     $photosets = $flickr->photos()->getSets([$photo['id']]);
     $logger->info(count($photosets).' albums found on Flickr', FLICKR2PIWIGO);
 
@@ -158,7 +158,14 @@ function ws_flickr2piwigo_importPhoto($params)
       else
       {
         $logger->info('Creating category: '.$photoset_info['title'], FLICKR2PIWIGO);
-        $cat = create_virtual_category(pwg_db_real_escape_string($photoset_info['title']));
+        $photoset_info = $flickr->photosets()->getInfo($photoset_info['id'], $params['user_id']);
+        $photoset_options=NULL;
+        if (isset($photoset_info['description'])) {
+          $photoset_description = $flickr->photosets()->getInfo($photoset_info['id'], NULL)['description'];
+          $logger->info('Category: '.$photoset_info['title'].' will be created with description: '.$photoset_description, FLICKR2PIWIGO);
+          $photoset_options = ["comment" => pwg_db_real_escape_string($photoset_description)];
+        }
+        $cat = create_virtual_category(pwg_db_real_escape_string($photoset_info['title']), NULL, $photoset_options);
         if ( !isset( $cat['id'] ) ) {
           $cat_error_msg = l10n('Unable to create category: %s', $photoset_info['title']);
           $logger->error( $cat_error_msg, FLICKR2PIWIGO );
